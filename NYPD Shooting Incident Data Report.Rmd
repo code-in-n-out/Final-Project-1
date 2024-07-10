@@ -1,0 +1,139 @@
+---
+title: "NYPD Shooting Incident Data Report"
+author: "MSDS-Student"
+date: "2024-07-08"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(lubridate)
+library(tidyverse)
+```
+# Assignment - Task 1
+## Import, tidy and analyze the NYPD Shooting Incident dataset obtained.
+
+### Import Data
+
+```{r import_data, message=FALSE, warnings=FALSE}
+
+url <- "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv"
+shootings <- read_csv(url)
+```
+
+### Tidy up data
+
+```{r remove_columns}
+
+shootings <- shootings %>% 
+  select(-c(PRECINCT,JURISDICTION_CODE,LOCATION_DESC,X_COORD_CD,Y_COORD_CD,Latitude, Longitude, Lon_Lat, LOC_OF_OCCUR_DESC, LOC_CLASSFCTN_DESC, INCIDENT_KEY))
+
+```
+
+```{r convert_date}
+
+shootings <- shootings %>%
+  mutate(OCCUR_DATE = mdy(OCCUR_DATE))
+```
+
+```{r data_points}
+
+shootings$BORO <- factor(shootings$BORO)
+shootings$PERP_AGE_GROUP <- factor(shootings$PERP_AGE_GROUP)
+shootings$PERP_SEX <- factor(shootings$PERP_SEX)
+shootings$PERP_RACE <- factor(shootings$PERP_RACE)
+shootings$VIC_AGE_GROUP <- factor(shootings$VIC_AGE_GROUP)
+shootings$VIC_SEX <- factor(shootings$VIC_SEX)
+shootings$VIC_RACE <- factor(shootings$VIC_RACE)
+shootings$STATISTICAL_MURDER_FLAG <- factor(shootings$STATISTICAL_MURDER_FLAG)
+
+```
+
+### Summary of Data
+
+```{r shooting_summary}
+summary(shootings)
+```
+# Assignment - Task 2
+## Be sure your project is reproducible and contains some visualization and analysis. You may use the data to do any analysis that is of interest to you. You may use the data to do any analysis that is of interest to you. You should include at least two visualizations and one model.
+
+### Project is reproducible as we have the analysis and visualization done on R
+
+### Visualizations Alanysis 1 - I would like to analyze fatal and non fatal victims age-group
+
+#### From the charts below we can confirm that the data is close to complete as UNKNOWN age group data is almost negligible.
+#### We can say with confidence that majority of the victims are in age group 18-44 is both fatal and non fatal incidents.
+
+
+```{r bar_victim_age}
+
+shootings %>%
+  filter(STATISTICAL_MURDER_FLAG == TRUE) %>%
+  ggplot(aes(x = VIC_AGE_GROUP)) +
+  geom_bar(fill = "#808080")+
+  theme_bw()+
+  labs(x = "Victim Age",
+       y = "Fatal Incidents",
+       title = "Fatal Incidents by Victim Age Group")
+
+shootings %>%
+  filter(STATISTICAL_MURDER_FLAG == FALSE) %>%
+  ggplot(aes(x = VIC_AGE_GROUP)) +
+  geom_bar(fill = "#808080")+
+  theme_bw()+
+  labs(x = "Victim Age",
+       y = "Non-Fatal Incidents",
+       title = "Non-Fatal Incidents by Victim Age Group")
+```
+
+### Visualization Analysis 2 - I would like to analyze the gender of most affected victims 
+
+#### From the charts below we can confirm that the data is close to complete as UNKNOWN gender data is almost negligible.
+#### We can say with confidence that majority of the victims are male.
+
+```{r bar_victim_sex}
+shootings %>%
+  filter(STATISTICAL_MURDER_FLAG == TRUE) %>%
+  ggplot(aes(x = fct_infreq(VIC_SEX))) + 
+  geom_bar(stat = 'count')+
+  geom_bar(fill = "#808080")+
+  theme_bw()+
+  labs(x = "Victim Gender",
+       y = "Fatal Incidents",
+       title = "Fatal Incidents by Victim Gender")
+
+shootings %>%
+    filter(STATISTICAL_MURDER_FLAG == FALSE) %>%
+  ggplot(aes(x = fct_infreq(VIC_SEX))) + 
+  geom_bar(stat = 'count')+
+  geom_bar(fill = "#808080")+
+  theme_bw()+
+  labs(x = "Victim Gender",
+       y = "Non-Fatal Incidents",
+       title = "Non-Fatal Incidents by Victim Gender")
+```
+
+### Model Analysis 3 - I would analyze data from model if Fatal Incident is linked to victims age, gender etc.
+#### Below model helps us to arrive to a thinking that survival rate is higher for age group 18-24.
+
+```{r vic_model, echo=FALSE}
+
+
+glm_model <- glm(STATISTICAL_MURDER_FLAG ~ VIC_AGE_GROUP + VIC_RACE + VIC_SEX, data = shootings, family = 'binomial')
+
+summary(glm_model)
+
+```
+
+# Assignment - Task 3
+
+## Be sure to identify any bias possible in the data and in your analysis.
+
+### Without any bias and stricly following the data, we can conclude that in NY victims and perpetrators are mostly men.
+
